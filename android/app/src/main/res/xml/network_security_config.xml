@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Permitir tráfego para todos os subdomínios da Top Fotos -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">topfotos.com.br</domain>
+        <domain includeSubdomains="true">painel.topfotos.com.br</domain>
+        <domain includeSubdomains="true">api.topfotos.com.br</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Configuração base: bloquear cleartext em outros domínios -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

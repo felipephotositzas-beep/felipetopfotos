@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Top Fotos</string>
+    <string name="title_activity_main">Top Fotos</string>
+    <string name="package_name">com.topfotos.app</string>
+    <string name="custom_url_scheme">com.topfotos.app</string>
+</resources>
