@@ -29,8 +29,9 @@ const CartModal = () => {
           <button 
             onClick={() => setIsCartModalOpen(false)}
             className="cart-modal-close-btn"
+            aria-label="Fechar carrinho"
           >
-            <i className="fas fa-times"></i>
+            <i className="fas fa-times" aria-hidden="true"></i>
           </button>
         </div>
 
@@ -38,7 +39,7 @@ const CartModal = () => {
         <div className="cart-modal-content">
           {cartItems.length === 0 ? (
             <div className="cart-modal-empty">
-              <i className="fas fa-shopping-cart"></i>
+              <i className="fas fa-shopping-cart" aria-hidden="true"></i>
               <p>Seu carrinho está vazio.</p>
             </div>
           ) : (
@@ -47,7 +48,7 @@ const CartModal = () => {
                 <li key={item.id} className="cart-item-card">
                   <img 
                     src={item.url} 
-                    alt="Cart item" 
+                    alt={item.is_video ? `Miniatura do vídeo #${item.short_reference}` : `Miniatura da foto #${item.short_reference}`} 
                     className="cart-item-thumb"
                   />
                   <div className="cart-item-details">
@@ -59,8 +60,9 @@ const CartModal = () => {
                         onClick={() => removeFromCart(item.id)}
                         className="cart-item-remove-btn"
                         title="Remover"
+                        aria-label={`Remover ${item.is_video ? 'vídeo' : 'foto'} #${item.short_reference} do carrinho`}
                       >
-                        <i className="fas fa-trash-alt"></i>
+                        <i className="fas fa-trash-alt" aria-hidden="true"></i>
                       </button>
                     </div>
                     <span className="cart-item-price">

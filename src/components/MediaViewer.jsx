@@ -71,7 +71,7 @@ const MediaViewer = ({ photos, currentIndex, onClose, onNavigate }) => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, photos.length, onClose, onNavigate]);
+  }, [currentIndex, photos.length, onClose, onNavigate, triggerScreenshotBlock]);
 
   // ── Detectar Screenshot / Print via visibilitychange ─────────────────────
   useEffect(() => {
@@ -140,7 +140,7 @@ const MediaViewer = ({ photos, currentIndex, onClose, onNavigate }) => {
     touchEndX.current = e.changedTouches[0].screenX;
   };
 
-  const handleTouchEnd = (e) => {
+  const handleTouchEnd = () => {
     if (!touchStartX.current || !touchEndX.current) return;
     const diff = touchStartX.current - touchEndX.current;
     if (diff > 50 && currentIndex < photos.length - 1) {
@@ -184,7 +184,7 @@ const MediaViewer = ({ photos, currentIndex, onClose, onNavigate }) => {
           <span className="media-ref">#{currentMedia.short_reference}</span>
           <span className="media-drm-badge">🔒 Protegido</span>
         </div>
-        <button className="media-close-btn" onClick={onClose}>
+        <button className="media-close-btn" onClick={onClose} aria-label="Fechar visualizador">
           <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -194,7 +194,7 @@ const MediaViewer = ({ photos, currentIndex, onClose, onNavigate }) => {
       {/* ── Conteúdo principal ─────────────────────────────────────────── */}
       <div className="media-viewer-content" onClick={(e) => e.stopPropagation()}>
         {currentIndex > 0 && (
-          <button className="nav-btn prev-btn" onClick={() => onNavigate(currentIndex - 1)}>
+          <button className="nav-btn prev-btn" onClick={() => onNavigate(currentIndex - 1)} aria-label="Mídia anterior">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -236,7 +236,7 @@ const MediaViewer = ({ photos, currentIndex, onClose, onNavigate }) => {
               />
               {/* Controles customizados de vídeo */}
               <div className="custom-video-controls" onClick={(e) => e.stopPropagation()}>
-                <button className="video-play-btn" onClick={togglePlay}>
+                <button className="video-play-btn" onClick={togglePlay} aria-label={videoPlaying ? "Pausar vídeo" : "Reproduzir vídeo"}>
                   {videoPlaying ? (
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
@@ -274,7 +274,7 @@ const MediaViewer = ({ photos, currentIndex, onClose, onNavigate }) => {
         </div>
 
         {currentIndex < photos.length - 1 && (
-          <button className="nav-btn next-btn" onClick={() => onNavigate(currentIndex + 1)}>
+          <button className="nav-btn next-btn" onClick={() => onNavigate(currentIndex + 1)} aria-label="Próxima mídia">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

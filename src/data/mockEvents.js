@@ -28,12 +28,12 @@ export const mockEventsData = {
             },
             "city": "Imperatriz - MA",
             "owner": {
-                "id": "a6e04b07-0521-4f51-8cf4-b47d1a0e36a3",
-                "name": "Topfotos",
+                "id": "4b59febb-2dd3-4002-987f-ad8da0840dbd",
+                "name": "Felipephotositz",
                 "image": "https://ik.imagekit.io/yg7h35ptj/public/assets/temp_9T4c4ko.png?tr=w-401,h-401,c-at_max",
-                "email": "maykon.mcg@gmail.com",
+                "email": "staff@felipephotos.com.br",
                 "phone": "99991596445",
-                "slug": "fotografo-topfotos"
+                "slug": "felipephotos"
             },
             "registration_status": "Encerrada",
             "price": "10.00",
@@ -211,12 +211,12 @@ export const mockEventsData = {
             },
             "city": "Carolina - MA",
             "owner": {
-                "id": "b00687e3-f88f-4d0b-b2fa-be3d5c99b54f",
-                "name": "Top Fotos",
+                "id": "4b59febb-2dd3-4002-987f-ad8da0840dbd",
+                "name": "Felipephotositz",
                 "image": "https://ik.imagekit.io/yg7h35ptj/public/assets/temp_sKoGqbZ.png?tr=w-401,h-401,c-at_max",
-                "email": "staff@topfotos.com.br",
+                "email": "staff@felipephotos.com.br",
                 "phone": "99991596445",
-                "slug": "topfotos"
+                "slug": "felipephotos"
             },
             "registration_status": null,
             "price": "25.00",

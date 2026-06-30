@@ -1,146 +1,62 @@
 {
-  "images" : [
+  "images": [
     {
-      "idiom" : "universal",
-      "scale" : "1x"
+      "filename": "Default@1x~universal~anyany.png",
+      "idiom": "universal",
+      "scale": "1x",
+      "unassigned": true
     },
     {
-      "appearances" : [
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
       ],
-      "idiom" : "universal",
-      "scale" : "1x"
+      "filename": "Default@1x~universal~anyany-dark.png",
+      "idiom": "universal",
+      "scale": "1x",
+      "unassigned": true
     },
     {
-      "idiom" : "universal",
-      "scale" : "2x"
+      "filename": "Default@2x~universal~anyany.png",
+      "idiom": "universal",
+      "scale": "2x",
+      "unassigned": true
     },
     {
-      "appearances" : [
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
       ],
-      "idiom" : "universal",
-      "scale" : "2x"
+      "filename": "Default@2x~universal~anyany-dark.png",
+      "idiom": "universal",
+      "scale": "2x",
+      "unassigned": true
     },
     {
-      "idiom" : "universal",
-      "scale" : "3x"
+      "filename": "Default@3x~universal~anyany.png",
+      "idiom": "universal",
+      "scale": "3x",
+      "unassigned": true
     },
     {
-      "appearances" : [
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
       ],
-      "idiom" : "universal",
-      "scale" : "3x"
-    },
-    {
-      "idiom" : "iphone",
-      "scale" : "1x"
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "idiom" : "iphone",
-      "scale" : "1x"
-    },
-    {
-      "idiom" : "iphone",
-      "scale" : "2x"
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "idiom" : "iphone",
-      "scale" : "2x"
-    },
-    {
-      "idiom" : "iphone",
-      "scale" : "3x"
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "idiom" : "iphone",
-      "scale" : "3x"
-    },
-    {
-      "filename" : "Default@1x~universal~anyany.png",
-      "idiom" : "universal",
-      "scale" : "1x",
-      "unassigned" : true
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "filename" : "Default@1x~universal~anyany-dark.png",
-      "idiom" : "universal",
-      "scale" : "1x",
-      "unassigned" : true
-    },
-    {
-      "filename" : "Default@2x~universal~anyany.png",
-      "idiom" : "universal",
-      "scale" : "2x",
-      "unassigned" : true
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "filename" : "Default@2x~universal~anyany-dark.png",
-      "idiom" : "universal",
-      "scale" : "2x",
-      "unassigned" : true
-    },
-    {
-      "filename" : "Default@3x~universal~anyany.png",
-      "idiom" : "universal",
-      "scale" : "3x",
-      "unassigned" : true
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "filename" : "Default@3x~universal~anyany-dark.png",
-      "idiom" : "universal",
-      "scale" : "3x",
-      "unassigned" : true
+      "filename": "Default@3x~universal~anyany-dark.png",
+      "idiom": "universal",
+      "scale": "3x",
+      "unassigned": true
     }
   ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
+  "info": {
+    "author": "xcode",
+    "version": 1
   }
 }

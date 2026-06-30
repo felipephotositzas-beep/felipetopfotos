@@ -1,12 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiUrl } from '../config/api';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import CameraCapture from '../components/CameraCapture';
 import MediaViewer from '../components/MediaViewer';
 import CartFloatingBar from '../components/CartFloatingBar';
 import CartModal from '../components/CartModal';
+import { PhotoGridSkeleton } from '../components/Skeleton';
+import PhotoGridItem from '../components/PhotoGridItem';
 import { useCart } from '../context/CartContext';
-import { mockEventsData } from '../data/mockEvents';
+import { fetchWithTimeout } from '../utils/http';
+import { useToast } from '../components/Toast';
+import { logger } from '../utils/logger';
+
+
+
+// Mock carregado somente em desenvolvimento
+const getMockEvent = async (id) => {
+  if (import.meta.env.DEV) {
+    const { mockEventsData } = await import('../data/mockEvents');
+    return mockEventsData.results.find(e => e.id === id || e.slug === id) || null;
+  }
+  return null;
+};
 
 const formatPhone = (phoneStr) => {
   if (!phoneStr) return '';
@@ -29,6 +44,7 @@ const EventDetails = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const toast = useToast();
   const [eventData, setEventData] = useState(location.state?.event);
 
   const hasProgressiveDiscount = 
@@ -47,6 +63,14 @@ const EventDetails = () => {
   // Cart & Filters
   const { addToCart, isInCart, initializeCartForEvent } = useCart();
   const [mediaFilter, setMediaFilter] = useState('all');
+
+  const handleSelectMedia = useCallback((index) => {
+    setSelectedMediaIndex(index);
+  }, []);
+
+  const handleAddToCart = useCallback((photo) => {
+    addToCart({ ...photo, url: photo.watermark_path });
+  }, [addToCart]);
   
   // States for Facial Recognition
   const [isSearchingFace, setIsSearchingFace] = useState(false);
@@ -68,25 +92,21 @@ const EventDetails = () => {
     if (!eventData && id) {
       const fetchEventData = async () => {
         try {
-          const response = await fetch(apiUrl('/api/pages/events/list'));
+          const response = await fetchWithTimeout(apiUrl('/api/pages/events/list'));
           if (response.ok) {
             const data = await response.json();
             const found = data.results?.find(e => e.id === id);
             if (found) {
               setEventData(found);
             } else {
-              const mockFound = mockEventsData.results.find(e => e.id === id);
-              if (mockFound) {
-                setEventData(mockFound);
-              }
+              const mockFound = await getMockEvent(id);
+              if (mockFound) setEventData(mockFound);
             }
           }
         } catch (error) {
-          console.warn('Erro ao buscar detalhes do evento:', error);
-          const mockFound = mockEventsData.results.find(e => e.id === id);
-          if (mockFound) {
-            setEventData(mockFound);
-          }
+          logger.warn('Erro ao buscar detalhes do evento:', error);
+          const mockFound = await getMockEvent(id);
+          if (mockFound) setEventData(mockFound);
         }
       };
       fetchEventData();
@@ -102,23 +122,24 @@ const EventDetails = () => {
     }
 
     try {
-      const response = await fetch(apiUrl(`/api/photo/list/${id}?page=${pageNumber}`));
+      const response = await fetchWithTimeout(
+        apiUrl(`/api/photo/list/${id}?page=${pageNumber}&photographer_id=4b59febb-2dd3-4002-987f-ad8da0840dbd`)
+      );
       
       if (response.ok) {
         const data = await response.json();
-        const newPhotos = data.results || [];
-        
-        // Sempre substituir as fotos para ter paginação real
-        setPhotos(newPhotos);
+        const rawPhotos = data.results || [];
+        const felipePhotos = rawPhotos.filter(p => p.photographer === '4b59febb-2dd3-4002-987f-ad8da0840dbd');
+        setPhotos(felipePhotos);
         if (pageNumber === 1) {
           setTotalPhotos(data.count || 0);
         }
-        
-        setHasMore(pageNumber < data.num_pages);
+        // Tem mais páginas se o resultado atual veio cheio (32 itens) e não atingiu o limite de num_pages
+        setHasMore(rawPhotos.length === 32 && pageNumber < data.num_pages);
         setPage(pageNumber);
       }
     } catch (error) {
-      console.warn('Erro ao carregar fotos:', error);
+      logger.warn('Erro ao carregar fotos:', error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -136,7 +157,7 @@ const EventDetails = () => {
       // O backend espera a string em base64 (data:image/...) diretamente no form-data, e não um binário
       formData.append('photo', dataUrl);
 
-      const response = await fetch(apiUrl(`/api/photo/search-by-photo/${id}`), {
+      const response = await fetchWithTimeout(apiUrl(`/api/photo/search-by-photo/${id}`), {
         method: 'POST',
         body: formData
       });
@@ -144,15 +165,16 @@ const EventDetails = () => {
       if (response.ok) {
         const data = await response.json();
         const results = Array.isArray(data) ? data : (data.results || []);
-        setPhotos(results);
+        const filteredResults = results.filter(p => p.photographer === '4b59febb-2dd3-4002-987f-ad8da0840dbd');
+        setPhotos(filteredResults);
         setIsFaceSearchActive(true);
-        setHasMore(false); // Disable pagination for search results
+        setHasMore(false);
       } else {
-        alert('Erro ao buscar fotos por reconhecimento facial.');
+        toast.error('Erro ao buscar fotos por reconhecimento facial.');
       }
     } catch (error) {
-      console.error('Face search error:', error);
-      alert('Falha na conexão com o servidor.');
+      logger.error('Face search error:', error);
+      toast.error('Falha na conexão com o servidor.');
     } finally {
       setIsSearchingFace(false);
       setIsCameraOpen(false); // Garante que a câmera seja fechada
@@ -172,7 +194,7 @@ const EventDetails = () => {
       processFaceSearch(e.target.result);
     };
     reader.onerror = () => {
-      alert('Erro ao ler a imagem.');
+      toast.error('Erro ao ler a imagem. Tente outro arquivo.');
     };
     reader.readAsDataURL(file);
   };
@@ -187,7 +209,7 @@ const EventDetails = () => {
 
   const handleShare = () => {
     const url = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent('Olha esse evento Top!');
+    const text = encodeURIComponent('Confira minhas fotos no FelipePhotos!');
     const whatsappUrl = `https://wa.me/?text=${text} ${url}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -215,7 +237,7 @@ const EventDetails = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <img src="/logo.png" alt="Top Fotos" className="logo-img" style={{ cursor: 'pointer' }} onClick={() => navigate('/')} />
+        <div className="logo-felipe-photos" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>FELIPE<span>PHOTOS</span></div>
         <button className="header-compras-btn-icon" onClick={() => navigate('/minhas-compras')} title="Minhas Compras">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -268,34 +290,6 @@ const EventDetails = () => {
             </div>
           </div>
 
-          {eventData?.owner && (
-            <div className="event-organizer-box">
-              {eventData.owner.image && (
-                <img 
-                  src={eventData.owner.image} 
-                  alt={eventData.owner.name} 
-                  className="event-organizer-avatar" 
-                />
-              )}
-              <div className="event-organizer-info">
-                <span className="event-organizer-name">{eventData.owner.name}</span>
-                {eventData.owner.email && (
-                  <span className="event-organizer-email">{eventData.owner.email}</span>
-                )}
-                {eventData.owner.phone && (
-                  <a 
-                    href={`https://wa.me/55${eventData.owner.phone.replace(/\D/g, '')}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="event-organizer-phone"
-                  >
-                    {formatPhone(eventData.owner.phone)}
-                    <i className="fab fa-whatsapp whatsapp-color-icon"></i>
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Face Search Section */}
@@ -431,64 +425,21 @@ const EventDetails = () => {
         )}
 
         {loading ? (
-          <div className="loading-state">Buscando fotos...</div>
+          <PhotoGridSkeleton count={9} />
         ) : photos.length === 0 ? (
           <div className="empty-state">Nenhuma foto encontrada.</div>
         ) : (
           <>
             <div className="photos-grid">
               {photos.filter(p => mediaFilter === 'all' ? true : (mediaFilter === 'photo' ? !p.is_video : p.is_video)).map((photo, index) => (
-                <div 
-                  key={photo.id} 
-                  className="photo-item group" 
-                >
-                  <div onClick={() => setSelectedMediaIndex(index)} className="photo-wrapper">
-                    <img 
-                      src={photo.watermark_path} 
-                      alt={photo.index} 
-                      className="photo-img"
-                      loading="lazy"
-                    />
-                    {photo.is_video && (
-                      <div className="video-badge">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                      </div>
-                    )}
-                    {/* Photographer Overlay */}
-                    {photo.photographer_name && (
-                      <div className="photo-photographer-overlay">
-                        {photo.photographer_image && (
-                          <img 
-                            src={photo.photographer_image} 
-                            alt={photo.photographer_name} 
-                            className="photo-photographer-avatar" 
-                          />
-                        )}
-                        <span className="photo-photographer-name">{photo.photographer_name}</span>
-                      </div>
-                    )}
-                  </div>
-                  {/* Add to Cart Overlay - Always visible on mobile */}
-                  <div className="photo-cart-btn-container">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart({ ...photo, url: photo.watermark_path });
-                      }}
-                      disabled={isInCart(photo.id)}
-                      className={`photo-cart-btn ${isInCart(photo.id) ? 'photo-cart-btn-active' : ''}`}
-                    >
-                      {isInCart(photo.id) ? (
-                        <i className="fas fa-check text-lg"></i>
-                      ) : (
-                        <i className="fas fa-shopping-cart text-lg"></i>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
+                <PhotoGridItem 
+                  key={photo.id}
+                  photo={photo}
+                  index={index}
+                  inCart={isInCart(photo.id)}
+                  onSelect={handleSelectMedia}
+                  onAddToCart={handleAddToCart}
+                />
               ))}
             </div>
             

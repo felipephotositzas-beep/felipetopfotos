@@ -1,18 +1,16 @@
 import { Capacitor } from '@capacitor/core';
 
-// No Android (WebView nativo), não há proxy do Vite
-// então precisamos da URL absoluta do servidor
+// No Android/iOS (WebView nativo) ou na Web em Produção, precisamos da URL absoluta do servidor.
+// Em desenvolvimento local na Web, usa-se a string vazia para usar o proxy do Vite.
 const isNative = Capacitor.isNativePlatform();
+const isProd = import.meta.env.PROD;
 
-export const API_BASE = isNative
+export const API_BASE = (isNative || isProd)
   ? 'https://painel.topfotos.com.br'
-  : '';  // vazio = usa proxy do Vite em /api
+  : '';
 
 /**
  * Monta a URL completa da API.
- * Ex: apiUrl('/api/photo/list/123') → 
- *   Web: '/api/photo/list/123'  (proxy Vite)
- *   Android: 'https://painel.topfotos.com.br/api/photo/list/123'
  */
 export function apiUrl(path) {
   return `${API_BASE}${path}`;

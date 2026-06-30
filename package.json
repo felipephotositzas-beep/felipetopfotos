@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
+    "test": "vitest run",
     "android:build": "npm run build && npx cap sync && node -e \"const fs=require('fs');['android/app/capacitor.build.gradle','android/capacitor-cordova-android-plugins/build.gradle','node_modules/@capacitor/splash-screen/android/build.gradle','node_modules/@capacitor/camera/android/build.gradle','node_modules/@capacitor-community/privacy-screen/android/build.gradle'].forEach(f=>{if(fs.existsSync(f)){let c=fs.readFileSync(f,'utf8');c=c.replace(/VERSION_21/g,'VERSION_17').replace(/jvmToolchain\\(21\\)/g,'jvmToolchain(17)');fs.writeFileSync(f,c)}})\" && cd android && ./gradlew clean assembleRelease",
     "android:bundle": "npm run build && npx cap sync && node -e \"const fs=require('fs');['android/app/capacitor.build.gradle','android/capacitor-cordova-android-plugins/build.gradle','node_modules/@capacitor/splash-screen/android/build.gradle','node_modules/@capacitor/camera/android/build.gradle','node_modules/@capacitor-community/privacy-screen/android/build.gradle'].forEach(f=>{if(fs.existsSync(f)){let c=fs.readFileSync(f,'utf8');c=c.replace(/VERSION_21/g,'VERSION_17').replace(/jvmToolchain\\(21\\)/g,'jvmToolchain(17)');fs.writeFileSync(f,c)}})\" && cd android && ./gradlew clean bundleRelease",
     "ios:sync": "npm run build && npx cap sync ios",
@@ -20,9 +21,14 @@
     "@capacitor/camera": "^8.2.0",
     "@capacitor/cli": "^8.4.1",
     "@capacitor/core": "^8.4.1",
+    "@capacitor/filesystem": "^8.1.2",
     "@capacitor/ios": "^8.4.1",
+    "@capacitor/preferences": "^8.0.1",
     "@capacitor/push-notifications": "^8.1.1",
+    "@capacitor/share": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
+    "@fortawesome/fontawesome-free": "^7.3.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.0",
@@ -35,6 +41,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "oxlint": "^1.69.0",
     "typescript": "^6.0.3",
-    "vite": "^8.1.0"
+    "vite": "^8.1.0",
+    "vitest": "^4.1.9"
   }
 }

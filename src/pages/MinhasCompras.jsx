@@ -1,26 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiUrl } from '../config/api';
 import { useNavigate } from 'react-router-dom';
+import { maskCpf } from '../utils/masks';
+import { resolveUrl } from '../utils/urls';
+import { SecureStorage } from '../utils/storage';
+import { useToast } from '../components/Toast';
+import { downloadAllPhotos } from '../utils/download';
+import { logger } from '../utils/logger';
+import { getCustomerOrders, getPixDetails, getOrderDetails } from '../services/checkoutService';
 
-const resolveUrl = (url) => {
-  if (!url) return '';
-  if (url.startsWith('/')) {
-    return `https://painel.topfotos.com.br${url}`;
-  }
-  return url;
-};
-
-const maskCpf = (value) => {
-  return value
-    .replace(/\D/g, '')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-    .replace(/(-\d{2})\d+?$/, '$1');
-};
 
 const MinhasCompras = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [cpf, setCpf] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -39,14 +30,17 @@ const MinhasCompras = () => {
   const pollIntervalRef = useRef(null);
   const pollStartRef = useRef(null);
 
-  // Load CPF from localStorage on mount
+  // Load CPF from SecureStorage on mount
   useEffect(() => {
-    const savedCpf = localStorage.getItem('customer_cpf');
-    if (savedCpf) {
-      const masked = maskCpf(savedCpf);
-      setCpf(masked);
-      fetchOrders(savedCpf);
-    }
+    const loadSavedCpf = async () => {
+      const savedCpf = await SecureStorage.get('customer_cpf');
+      if (savedCpf) {
+        const masked = maskCpf(savedCpf);
+        setCpf(masked);
+        fetchOrders(savedCpf);
+      }
+    };
+    loadSavedCpf();
   }, []);
 
   // Cleanup polling on unmount
@@ -64,28 +58,14 @@ const MinhasCompras = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(apiUrl('/api/customer/orders'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ cpf: cleanCpf })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Since the API returns { count, next, previous, results }
-        const results = data.results || [];
-        setOrders(results);
-        setSearched(true);
-        localStorage.setItem('customer_cpf', cleanCpf);
-      } else {
-        const errData = await response.json().catch(() => ({}));
-        setError(errData.error || 'Erro ao carregar compras. Verifique o CPF informado.');
-      }
+      const data = await getCustomerOrders(cleanCpf);
+      const results = Array.isArray(data) ? data : (data.results || []);
+      setOrders(results);
+      setSearched(true);
+      await SecureStorage.set('customer_cpf', cleanCpf);
     } catch (err) {
-      console.error(err);
-      setError('Erro de conexão com o servidor.');
+      logger.error(err);
+      setError(err.message || 'Erro ao carregar compras. Verifique o CPF informado.');
     } finally {
       setLoading(false);
     }
@@ -95,14 +75,14 @@ const MinhasCompras = () => {
     e.preventDefault();
     const clean = cpf.replace(/\D/g, '');
     if (clean.length < 11) {
-      alert('Digite um CPF válido com 11 dígitos.');
+      toast.warning('Digite um CPF válido com 11 dígitos.');
       return;
     }
     fetchOrders(clean);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('customer_cpf');
+  const handleLogout = async () => {
+    await SecureStorage.remove('customer_cpf');
     setCpf('');
     setOrders([]);
     setSearched(false);
@@ -133,22 +113,15 @@ const MinhasCompras = () => {
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
 
     try {
-      const response = await fetch(apiUrl(`/api/order/checkout-pix/${orderId}`));
-      if (response.ok) {
-        const data = await response.json();
-        const extractedPix = data.pix_data || data.order?.pix_data;
-        if (extractedPix) {
-          setPixData(extractedPix);
-          // Start polling status
-          startPolling(orderId);
-        } else {
-          setPixError('Dados do Pix não encontrados.');
-        }
+      const extractedPix = await getPixDetails(orderId);
+      if (extractedPix) {
+        setPixData(extractedPix);
+        startPolling(orderId);
       } else {
-        setPixError('Erro ao buscar QR Code do Pix.');
+        setPixError('Dados do Pix não encontrados.');
       }
     } catch (err) {
-      setPixError('Erro de conexão.');
+      setPixError(err.message || 'Erro de conexão.');
     } finally {
       setPixLoading(false);
     }
@@ -165,21 +138,17 @@ const MinhasCompras = () => {
       }
 
       try {
-        const response = await fetch(apiUrl(`/api/order/${orderId}`));
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'PAID') {
-            clearInterval(pollIntervalRef.current);
-            alert('Pagamento Pix confirmado com sucesso!');
-            // Reset Pix view and reload orders to move order to PAID tab
-            setViewingPixOrderId(null);
-            setPixData(null);
-            const clean = cpf.replace(/\D/g, '');
-            fetchOrders(clean);
-          }
+        const data = await getOrderDetails(orderId);
+        if (data.status === 'PAID') {
+          clearInterval(pollIntervalRef.current);
+          toast.success('Pagamento Pix confirmado com sucesso!');
+          setViewingPixOrderId(null);
+          setPixData(null);
+          const clean = cpf.replace(/\D/g, '');
+          fetchOrders(clean);
         }
       } catch (err) {
-        console.warn('Erro ao consultar status:', err);
+        logger.warn('Erro ao consultar status:', err);
       }
     }, 5000);
   };
@@ -190,33 +159,23 @@ const MinhasCompras = () => {
       setCopiedOrderId(orderId);
       setTimeout(() => setCopiedOrderId(null), 2000);
     }).catch(err => {
-      console.error('Erro ao copiar:', err);
+      logger.error('Erro ao copiar:', err);
+      toast.error('Não foi possível copiar o código.');
     });
   };
 
-  // Download all photos in an order sequentially
   const handleDownloadAll = async (items, orderNumber) => {
     const paidItems = items.filter(item => item.photo?.delivery_path);
     if (paidItems.length === 0) {
-      alert('Nenhuma foto disponível para download.');
+      toast.warning('Nenhuma foto disponível para download.');
       return;
     }
-
-    for (let i = 0; i < paidItems.length; i++) {
-      const item = paidItems[i];
+    const downloadItems = paidItems.map((item, i) => {
       const url = resolveUrl(item.photo.delivery_path);
-      const a = document.createElement('a');
-      a.href = url;
-      // Get filename from path or default
-      const extension = url.split('.').pop().split('?')[0] || 'jpg';
-      a.download = `pedido-${orderNumber}-foto-${i + 1}.${extension}`;
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      // Brief delay to avoid browser popup blocks
-      await new Promise(resolve => setTimeout(resolve, 400));
-    }
+      const ext = url.split('.').pop().split('?')[0] || 'jpg';
+      return { url, filename: `pedido-${orderNumber}-foto-${i + 1}.${ext}` };
+    });
+    await downloadAllPhotos(downloadItems);
   };
 
   // Separate orders
@@ -234,7 +193,7 @@ const MinhasCompras = () => {
         hour: '2-digit',
         minute: '2-digit'
       });
-    } catch (e) {
+    } catch {
       return dateStr;
     }
   };
@@ -247,7 +206,7 @@ const MinhasCompras = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <img src="/logo.png" alt="Top Fotos" className="logo-img" style={{ cursor: 'pointer' }} onClick={() => navigate('/')} />
+        <div className="logo-felipe-photos" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>FELIPE<span>PHOTOS</span></div>
         {searched ? (
           <button className="compras-logout-btn" onClick={handleLogout} title="Sair / Buscar outro CPF">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

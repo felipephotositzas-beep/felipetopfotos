@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import { SplashScreen } from '@capacitor/splash-screen';
+import { StatusBar, Style } from '@capacitor/status-bar';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
 import { Camera } from '@capacitor/camera';
@@ -8,6 +10,8 @@ import EventDetails from './pages/EventDetails';
 import Checkout from './pages/Checkout';
 import MinhasCompras from './pages/MinhasCompras';
 import { CartProvider } from './context/CartContext';
+import { ToastProvider } from './components/Toast';
+import { logger } from './utils/logger';
 
 function BackButtonHandler() {
   const navigate = useNavigate();
@@ -18,7 +22,7 @@ function BackButtonHandler() {
     let listener = null;
 
     const setupListener = async () => {
-      listener = await CapApp.addListener('backButton', (data) => {
+      listener = await CapApp.addListener('backButton', () => {
         if (!active) return;
         if (location.pathname === '/' || location.pathname === '/minhas-compras') {
           CapApp.exitApp();
@@ -64,7 +68,7 @@ function DeepLinkHandler() {
             }
           }
         } catch (e) {
-          console.error('Erro ao ler link:', e);
+          logger.error('Erro ao ler link:', e);
         }
       });
     };
@@ -83,33 +87,49 @@ function DeepLinkHandler() {
 
 function App() {
   useEffect(() => {
-    // Pedir permissões nativas no primeiro acesso
-    const requestInitialPermissions = async () => {
+    const init = async () => {
       if (Capacitor.isNativePlatform()) {
         try {
+          // Configurar status bar
+          await StatusBar.setStyle({ style: Style.Light });
+        } catch {
+          // StatusBar pode não estar disponível em todos os contextos
+        }
+
+        // Pedir permissões nativas no primeiro acesso
+        try {
           await Camera.requestPermissions();
-        } catch (e) {
-          console.warn('Permissão de câmera ignorada ou falhou:', e);
+        } catch {
+          // Permissão ignorada pelo usuário — não bloquear o app
+        }
+
+        // Ocultar splash screen após inicialização
+        try {
+          await SplashScreen.hide();
+        } catch {
+          // Ignorar se já foi ocultada
         }
       }
     };
-    
-    requestInitialPermissions();
+
+    init();
   }, []);
 
   return (
-    <CartProvider>
-      <BrowserRouter>
-        <BackButtonHandler />
-        <DeepLinkHandler />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/evento/:id" element={<EventDetails />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/minhas-compras" element={<MinhasCompras />} />
-        </Routes>
-      </BrowserRouter>
-    </CartProvider>
+    <ToastProvider>
+      <CartProvider>
+        <BrowserRouter>
+          <BackButtonHandler />
+          <DeepLinkHandler />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/evento/:id" element={<EventDetails />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/minhas-compras" element={<MinhasCompras />} />
+          </Routes>
+        </BrowserRouter>
+      </CartProvider>
+    </ToastProvider>
   );
 }
 

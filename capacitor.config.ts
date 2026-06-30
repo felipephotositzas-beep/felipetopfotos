@@ -9,10 +9,10 @@ const config: CapacitorConfig = {
       'painel.topfotos.com.br',
       '*.topfotos.com.br',
     ],
-    cleartext: true,
+    // cleartext removido: HTTPS obrigatório (ATS - Apple App Transport Security)
   },
   android: {
-    allowMixedContent: true,
+    // allowMixedContent removido: forçar HTTPS em produção
     captureInput: true,
     webContentsDebuggingEnabled: false,
   },
